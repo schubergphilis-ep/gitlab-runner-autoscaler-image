@@ -1,0 +1,21 @@
+ignore:
+  # Go module vulnerabilities (stdlib, go-git) are in the gitlab-runner binary
+  # shipped by the base image. Only fixable by updating gitlab/gitlab-runner:alpine.
+  - package:
+      type: go-module
+
+  # Python package vulnerability is a transitive dependency installed via apk.
+  # Only fixable when Alpine updates the py3-cryptography package.
+  - package:
+      type: python
+
+  # False positive: CVE-2022-32511 affects jmespath <1.0.0; installed is 1.0.1.
+  - vulnerability: CVE-2022-32511
+
+  # False positive: CVE-2015-8768 affects old Click versions; installed is 8.1.8.
+  - vulnerability: CVE-2015-8768
+
+  # The remaining apk vulnerabilities (python3, busybox, curl, ssl_client) have
+  # no fixed versions in Alpine repositories. Suppress until patches are released.
+  - fix-state: not-fixed
+  - fix-state: unknown
