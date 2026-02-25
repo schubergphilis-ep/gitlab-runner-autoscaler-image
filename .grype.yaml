@@ -1,6 +1,6 @@
 ignore:
   # Go module vulnerabilities (stdlib, go-git) are in the gitlab-runner binary
-  # shipped by the base image. Only fixable by updating gitlab/gitlab-runner:alpine.
+  # shipped by the base image (alpine-v18.9.0). Re-evaluate when bumping.
   - package:
       type: go-module
 

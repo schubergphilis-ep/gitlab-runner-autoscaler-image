@@ -1,4 +1,4 @@
-FROM gitlab/gitlab-runner:alpine
+FROM gitlab/gitlab-runner:alpine-v18.9.0
 
 LABEL maintainer="Schuberg Philis B.V."
 
