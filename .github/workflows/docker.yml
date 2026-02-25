@@ -29,3 +29,4 @@ jobs:
           push-to-container-registry: dockerhub
           dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          dockle-accept-key: TARGETARCH,TARGETOS,PATH,--user,--chmod,aws-cli,maintainer
