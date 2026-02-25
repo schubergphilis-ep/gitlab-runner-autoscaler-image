@@ -1,0 +1,46 @@
+#!/bin/sh
+set -e
+
+SECRET_NAME="${GITLAB_CONFIG_SECRET_NAME:-gitlab-runner-config}"
+SSH_KEY_SECRET="${SSH_KEY_SECRET_NAME:-gitlab-runner-ssh-key}"
+REGION="${AWS_REGION:-us-east-1}"
+CONFIG_FILE="/etc/gitlab-runner/config.toml"
+SSH_KEY_PATH="/root/.ssh/id_rsa"
+
+# Generate Docker credential helper config
+if [ -n "$DOCKER_CREDENTIAL_HELPERS" ]; then
+  printf '{"credHelpers":%s}' "$DOCKER_CREDENTIAL_HELPERS" > /root/.docker/config.json
+fi
+
+echo "Fetching GitLab Runner configuration..."
+
+mkdir -p "$(dirname "$CONFIG_FILE")"
+mkdir -p "$(dirname "$SSH_KEY_PATH")"
+
+# Fetch SSH private key from Secrets Manager
+echo "Fetching SSH private key..."
+aws secretsmanager get-secret-value \
+  --secret-id "$SSH_KEY_SECRET" \
+  --region "$REGION" \
+  --query SecretString \
+  --output text > "$SSH_KEY_PATH"
+
+chmod 600 "$SSH_KEY_PATH"
+echo "✓ SSH private key saved to $SSH_KEY_PATH"
+
+# Fetch GitLab Runner configuration and transform it
+# Write directly to config file to avoid secrets in process arguments
+aws secretsmanager get-secret-value \
+  --secret-id "$SECRET_NAME" \
+  --region "$REGION" \
+  --query SecretString \
+  --output text \
+  | jq --arg key_path "$SSH_KEY_PATH" \
+    '.runners[].autoscaler.connector_config.key_path = $key_path' \
+  | json2toml > "$CONFIG_FILE"
+
+chmod 600 "$CONFIG_FILE"
+
+echo "✓ Configuration written to $CONFIG_FILE"
+
+exec gitlab-runner "$@"
