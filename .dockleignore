@@ -1,0 +1,4 @@
+# The base image (gitlab/gitlab-runner:alpine) requires root.
+# The entrypoint writes secrets to /root/.ssh/ and /etc/gitlab-runner/
+# before exec-ing gitlab-runner, which drops privileges for job execution.
+CIS-DI-0001
