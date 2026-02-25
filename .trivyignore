@@ -1,0 +1,7 @@
+# Go stdlib vulnerabilities in gitlab-runner and docker-machine binaries
+# from the base image (gitlab/gitlab-runner:alpine). Only fixable by
+# updating the base image.
+CVE-2025-68121
+CVE-2025-61726
+CVE-2025-61728
+CVE-2025-61730
