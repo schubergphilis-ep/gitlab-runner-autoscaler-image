@@ -6,7 +6,7 @@ RUN apk add --no-cache \
     aws-cli=2.32.7-r0 \
     python3=3.12.12-r0 \
     pipx=1.8.0-r0 \
-    docker-credential-ecr-login=0.11.0-r2 \
+    docker-credential-ecr-login=0.11.0-r3 \
     jq=1.8.1-r0
 
 # Install remarshal using pipx
