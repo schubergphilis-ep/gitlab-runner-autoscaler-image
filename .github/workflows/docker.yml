@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: MCVS Docker
-        uses: schubergphilis/mcvs-docker-action@v0.9.1
+        uses: schubergphilis/mcvs-docker-action@v0.10.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           images: schubergphilis/gitlab-runner-autoscaler
