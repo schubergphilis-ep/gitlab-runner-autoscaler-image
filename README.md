@@ -74,7 +74,7 @@ Example:
 
 ### SSH key (`SSH_KEY_SECRET_NAME`)
 
-Store the SSH private key as a plain text secret string. Used by the fleeting plugin to connect to provisioned EC2 instances.
+Store the SSH private key in standard OpenSSH format. The entrypoint fetches it at runtime from Secrets Manager (encrypted at rest via KMS) and writes it to disk with `chmod 600`. The fleeting-plugin-aws requires an SSH key to connect to the EC2 instances it provisions for job execution. The key must be provided inside the container because the runner AMI uses Fedora CoreOS, which does not support EC2 Instance Connect — so a pre-shared key pair is the only available authentication method.
 
 ## IAM permissions
 

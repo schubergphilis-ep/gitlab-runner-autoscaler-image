@@ -44,4 +44,3 @@ There are no tests, linters, or Makefile — this is a Docker image project with
 - **Fleeting plugin is installed at build time** (`gitlab-runner fleeting install`) to avoid runtime supply chain risk.
 - **Commit messages** follow conventional commits: `feat:`, `fix(docker):`, etc.
 - **CI** uses GitHub Actions with `schubergphilis/mcvs-docker-action` for scanning and pushing to Docker Hub.
-- **Code ownership**: all changes require approval from `@schubergphilis-ep/VPFCloudBuildingBlocksTeam`.

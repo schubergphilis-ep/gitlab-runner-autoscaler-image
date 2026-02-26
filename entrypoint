@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+umask 077
 
 SECRET_NAME="${GITLAB_CONFIG_SECRET_NAME:-gitlab-runner-config}"
 SSH_KEY_SECRET="${SSH_KEY_SECRET_NAME:-gitlab-runner-ssh-key}"
