@@ -1,0 +1,31 @@
+#!/bin/sh
+set -e
+umask 077
+
+SECRET_NAME="${GITLAB_CONFIG_SECRET_NAME:-gitlab-runner-config}"
+REGION="${AWS_REGION:-us-east-1}"
+CONFIG_FILE="/etc/gitlab-runner/config.toml"
+
+# Generate Docker credential helper config
+if [ -n "$DOCKER_CREDENTIAL_HELPERS" ]; then
+  printf '{"credHelpers":%s}' "$DOCKER_CREDENTIAL_HELPERS" > /root/.docker/config.json
+fi
+
+echo "Fetching GitLab Runner configuration..."
+
+mkdir -p "$(dirname "$CONFIG_FILE")"
+
+# Fetch GitLab Runner configuration and transform it
+# Write directly to config file to avoid secrets in process arguments
+aws secretsmanager get-secret-value \
+  --secret-id "$SECRET_NAME" \
+  --region "$REGION" \
+  --query SecretString \
+  --output text \
+  | json2toml > "$CONFIG_FILE"
+
+chmod 600 "$CONFIG_FILE"
+
+echo "✓ Configuration written to $CONFIG_FILE"
+
+exec gitlab-runner "$@"
