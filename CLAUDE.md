@@ -16,7 +16,6 @@ docker build -t gitlab-runner-autoscaler .
 docker run \
   -e AWS_REGION=eu-west-1 \
   -e GITLAB_CONFIG_SECRET_NAME=my-runner-config \
-  -e SSH_KEY_SECRET_NAME=my-runner-ssh-key \
   gitlab-runner-autoscaler run
 ```
 
@@ -27,11 +26,11 @@ There are no tests, linters, or Makefile — this is a Docker image project with
 **Container startup flow** (handled by `entrypoint`):
 
 1. Merge Docker credential helpers into `/root/.docker/config.json` (if `DOCKER_CREDENTIAL_HELPERS` is set)
-2. Fetch SSH private key from AWS Secrets Manager → write to `/tmp/ssh-key`
-3. Fetch GitLab Runner config (JSON) from AWS Secrets Manager
-4. Inject SSH key path into config via `jq`
-5. Convert JSON → TOML using `json2toml` (from remarshal)
-6. Exec `gitlab-runner` with the generated TOML config
+2. Fetch GitLab Runner config (JSON) from AWS Secrets Manager
+3. Convert JSON → TOML using `json2toml` (from remarshal)
+4. Exec `gitlab-runner` with the generated TOML config
+
+SSH keys are provisioned via EC2 Instance Connect (`use_static_credentials = false`, the default).
 
 **Key files:**
 - `Dockerfile` — image definition with pinned Alpine package versions

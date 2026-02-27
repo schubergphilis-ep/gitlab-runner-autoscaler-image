@@ -1,6 +1,6 @@
 # gitlab-runner-autoscaler-image
 
-Custom GitLab Runner image with AWS autoscaling support via the [fleeting-plugin-aws](https://gitlab.com/gitlab-org/fleeting/plugins/aws). At startup, it fetches runner configuration and SSH keys from AWS Secrets Manager, then launches gitlab-runner with autoscaling enabled.
+Custom GitLab Runner image with AWS autoscaling support via the [fleeting-plugin-aws](https://gitlab.com/gitlab-org/fleeting/plugins/aws). At startup, it fetches runner configuration from AWS Secrets Manager, then launches gitlab-runner with autoscaling enabled. SSH keys for connecting to EC2 instances (via private IP) are provisioned through EC2 Instance Connect.
 
 This image is designed to be used with [terraform-aws-mcaf-gitlab-runner-autoscaler](https://github.com/schubergphilis-ep/terraform-aws-mcaf-gitlab-runner-autoscaler), which provisions the supporting AWS infrastructure (ECS service, Secrets Manager secrets, IAM roles, and EC2 autoscaling configuration).
 
@@ -11,11 +11,9 @@ This image is designed to be used with [terraform-aws-mcaf-gitlab-runner-autosca
 │  Container startup (entrypoint)                  │
 │                                                  │
 │  1. Configure Docker credential helpers (if set) │
-│  2. Fetch SSH key from Secrets Manager           │
-│  3. Fetch runner config from Secrets Manager     │
-│  4. Inject SSH key path into config              │
-│  5. Transform JSON → TOML config                 │
-│  6. exec gitlab-runner                           │
+│  2. Fetch runner config from Secrets Manager     │
+│  3. Transform JSON → TOML config                 │
+│  4. exec gitlab-runner                           │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -25,7 +23,6 @@ This image is designed to be used with [terraform-aws-mcaf-gitlab-runner-autosca
 |---|---|---|---|
 | `AWS_REGION` | No | `us-east-1` | AWS region for Secrets Manager calls |
 | `GITLAB_CONFIG_SECRET_NAME` | No | `gitlab-runner-config` | Secrets Manager secret containing the runner config (JSON) |
-| `SSH_KEY_SECRET_NAME` | No | `gitlab-runner-ssh-key` | Secrets Manager secret containing the SSH private key |
 | `DOCKER_CREDENTIAL_HELPERS` | No | — | JSON object of Docker credential helpers. When set, writes to `/root/.docker/config.json` at startup |
 
 ### Docker credential helpers
@@ -46,7 +43,7 @@ When unset, the image ships with an empty `credHelpers` config.
 
 ### Runner configuration (`GITLAB_CONFIG_SECRET_NAME`)
 
-Store the runner configuration as a JSON string. The entrypoint transforms it to TOML at startup. The `key_path` field in `runners[].autoscaler.connector_config` is automatically set to the fetched SSH key path.
+Store the runner configuration as a JSON string. The entrypoint transforms it to TOML at startup.
 
 Example:
 
@@ -72,9 +69,9 @@ Example:
 }
 ```
 
-### SSH key (`SSH_KEY_SECRET_NAME`)
+### SSH connectivity
 
-Store the SSH private key in standard OpenSSH format. The entrypoint fetches it at runtime from Secrets Manager (encrypted at rest via KMS) and writes it to disk with `chmod 600`. The fleeting-plugin-aws requires an SSH key to connect to the EC2 instances it provisions for job execution. The key must be provided inside the container because the runner AMI uses Fedora CoreOS, which does not support EC2 Instance Connect — so a pre-shared key pair is the only available authentication method.
+SSH keys are provisioned via [EC2 Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-methods.html). The fleeting-plugin-aws uses `use_static_credentials = false` (the default), which dynamically pushes temporary SSH keys via the `SendSSHPublicKey` API. The runner connects to EC2 instances over their private IP. This requires the `ec2-instance-connect:SendSSHPublicKey` IAM permission.
 
 ## IAM permissions
 
@@ -85,9 +82,18 @@ The container requires AWS credentials (via ECS task role, instance profile, or 
   "Effect": "Allow",
   "Action": "secretsmanager:GetSecretValue",
   "Resource": [
-    "arn:aws:secretsmanager:<region>:<account>:secret:<runner-config-secret>",
-    "arn:aws:secretsmanager:<region>:<account>:secret:<ssh-key-secret>"
+    "arn:aws:secretsmanager:<region>:<account>:secret:<runner-config-secret>"
   ]
+}
+```
+
+Additionally, the fleeting-plugin-aws needs permission to push SSH keys via EC2 Instance Connect:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "ec2-instance-connect:SendSSHPublicKey",
+  "Resource": "arn:aws:ec2:<region>:<account>:instance/*"
 }
 ```
 
@@ -103,7 +109,6 @@ docker build -t gitlab-runner-autoscaler .
 docker run \
   -e AWS_REGION=eu-west-1 \
   -e GITLAB_CONFIG_SECRET_NAME=my-runner-config \
-  -e SSH_KEY_SECRET_NAME=my-runner-ssh-key \
   -e DOCKER_CREDENTIAL_HELPERS='{"123456789.dkr.ecr.eu-west-1.amazonaws.com":"ecr-login"}' \
   gitlab-runner-autoscaler run
 ```
